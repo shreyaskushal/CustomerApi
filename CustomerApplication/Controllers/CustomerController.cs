@@ -40,10 +40,6 @@ namespace CustomerApplication.Controllers
 
 				return Ok(customer);
 			}
-			catch (DbUpdateException ex)
-			{
-				return BadRequest(ex.Message);
-			}
 			catch (Exception ex)
 			{
 				return BadRequest(ex.Message);

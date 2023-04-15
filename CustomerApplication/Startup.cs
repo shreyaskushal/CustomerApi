@@ -1,4 +1,5 @@
 using CustomerApplication.Data;
+using CustomerApplication.Middleware;
 using CustomerApplication.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -60,6 +61,8 @@ namespace CustomerApplication
 			app.UseRouting();
 
 			app.UseAuthorization();
+
+			app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 			app.UseEndpoints(endpoints =>
 			{
