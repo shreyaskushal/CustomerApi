@@ -1,5 +1,6 @@
 ﻿using CustomerApplication.Data;
 using CustomerApplication.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -12,16 +13,10 @@ namespace CustomerApplication.Services
 	public class CustomerService : ICustomerService
 	{
 		private readonly CustomerApiDbContext _dbContext;
-		private DbContextOptionsBuilder<CustomerApiDbContext> dbContext;
 
 		public CustomerService(CustomerApiDbContext dbContext)
 		{
 			this._dbContext = dbContext;
-		}
-
-		public CustomerService(DbContextOptionsBuilder<CustomerApiDbContext> dbContext)
-		{
-			this.dbContext = dbContext;
 		}
 
 		public IEnumerable<Customer> GetAllCustomers()
@@ -32,34 +27,54 @@ namespace CustomerApplication.Services
 		public Customer GetCustomerById(Guid id)
 		{
 			var existingCustomer = _dbContext.Customers.Find(id);
-			if (existingCustomer != null)
+
+			if (id == Guid.Empty)
 			{
-				return existingCustomer;
+				throw new ArgumentException("Id cannot be empty");
 			}
-			else
+			if (existingCustomer == null)
 			{
-				throw new Exception("Customer does not exists");
+				throw new Exception($"Customer with id {id} does not exist");
+				
 			}
+			return existingCustomer;
 		}
 
 		public IEnumerable<Customer> GetAllCustomerByFirstName(string firstName)
 		{
-			return _dbContext.Customers.Where(x => x.FirstName.ToLower() == firstName.ToLower());
+			if (string.IsNullOrEmpty(firstName))
+			{
+				throw new ArgumentException("First name cannot be null or empty");
+			}
+			return _dbContext.Customers.Where(x => x.FirstName.ToLower() == firstName.ToLower()).ToList();
 		}
 
 		public Customer GetCustomerByFirstAndLastName(string firstName, string LastName)
 		{
+			if (string.IsNullOrEmpty(firstName) || string.IsNullOrEmpty(LastName))
+			{
+				throw new ArgumentException("First name and last name cannot be null or empty");
+			}
 			return _dbContext.Customers.FirstOrDefault(x => x.FirstName.ToLower() == firstName.ToLower() && x.LastName.ToLower() == LastName.ToLower());
 		}
 
 		public IEnumerable<Customer> GetAllCustomersBetweenAge(int minAge, int maxAge)
 		{
-			return _dbContext.Customers.Where(x => x.Age >= minAge && x.Age <= maxAge);
+			if (minAge == default(int) || maxAge == default(int))
+			{
+				throw new ArgumentException("Age should be greater than 1");
+			}
+			return _dbContext.Customers.Where(x => x.Age >= minAge && x.Age <= maxAge).ToList();
 		}
 
 		public IEnumerable<Customer> GetAllCustomersByCountry(string country)
 		{
 			var result = new List<Customer>();
+
+			if (string.IsNullOrEmpty(country))
+			{
+				throw new ArgumentException("Country cannot be null or empty");
+			}
 			foreach (var item in _dbContext.Customers)
 			{
 				var Address = Regex.Replace(item.Address, @"[^\w\s]+", "").Split();
@@ -74,73 +89,88 @@ namespace CustomerApplication.Services
 
 		public async Task<int> AddCustomer(Customer customer)
 		{
-			var existingCustomer = _dbContext.Customers.Any(x => x.FirstName == customer.FirstName && x.LastName == customer.LastName);
+			var customerExists = _dbContext.Customers.Any(x => x.FirstName == customer.FirstName && x.LastName == customer.LastName);
 
-			if (!existingCustomer)
+			if (customerExists)
 			{
-				_dbContext.Customers.Add(customer);
-				return await _dbContext.SaveChangesAsync();
+				throw new ArgumentException($"Customer with name {customer.FirstName} {customer.LastName} already exists");
 			}
-			else
-			{
-				throw new Exception("Customer already exists");
-			}
+
+			_dbContext.Customers.Add(customer);
+			return await _dbContext.SaveChangesAsync();
+			
 		}
 
 		public async Task<int> UpdateCustomer(Guid id, Customer customer)
 		{
 			var existingCustomer = _dbContext.Customers.Find(id);
-			var customerWithSameName = _dbContext.Customers.Any(x => x.FirstName == customer.FirstName && x.LastName == customer.LastName);
-
-			if (existingCustomer != null && !customerWithSameName)
+			
+			if (id == Guid.Empty)
 			{
-				existingCustomer.FirstName = customer.FirstName;
-				existingCustomer.LastName = customer.LastName;
-				existingCustomer.Age = customer.Age;
-				existingCustomer.Address = customer.Address;
-
-				return await _dbContext.SaveChangesAsync();
+				throw new ArgumentException("Id cannot be empty");
 			}
-			else
+			if (existingCustomer == null)
 			{
-				if (customerWithSameName)
-				{
-					throw new Exception("Customer already exists");
-				}
-				throw new Exception("Customer does not exists");
+				throw new ArgumentException($"Customer with id {id} does not exist");
 			}
+
+			var customerWithSameNameExists = _dbContext.Customers.Any(x => x.Id != id && x.FirstName == customer.FirstName && x.LastName == customer.LastName);
+
+			if (customerWithSameNameExists)
+			{
+				throw new ArgumentException($"Customer with name {customer.FirstName} {customer.LastName} already exists");
+			}
+
+			existingCustomer.FirstName = customer.FirstName;
+			existingCustomer.LastName = customer.LastName;
+			existingCustomer.Age = customer.Age;
+			existingCustomer.Address = customer.Address;
+
+			return await _dbContext.SaveChangesAsync();
+
 		}
 
 		public IEnumerable<Customer> UpdateAllCustomersAgeByLastName(string lastName, int age)
 		{
 			var existingCustomers = _dbContext.Customers.Where(x => x.LastName.ToLower() == lastName.ToLower()).ToList();
 
-			if (existingCustomers.Any())
+			if (string.IsNullOrEmpty(lastName))
 			{
-				existingCustomers.ForEach(x => x.Age = age);
+				throw new ArgumentException("lastName cannot be null or empty");
+			}
 
-				_dbContext.SaveChanges();
-				return existingCustomers;
-			}
-			else
+			if (age == default(int))
 			{
-				throw new Exception("Customer does not exists");
+				throw new ArgumentException("Age should be greater than 1");
 			}
+
+			if (!existingCustomers.Any())
+			{
+				throw new ArgumentException($"Customer with lastname {lastName} does not exist");
+			}
+
+			existingCustomers.ForEach(x => x.Age = age);
+
+			_dbContext.SaveChanges();
+			return existingCustomers;
 		}
 
 		public void DeleteCustomerById(Guid id)
 		{
 			var existingCustomer = _dbContext.Customers.Find(id);
 
-			if(existingCustomer != null)
+			if (id == Guid.Empty)
 			{
-				_dbContext.Customers.Remove(existingCustomer);
-				_dbContext.SaveChanges();
+				throw new ArgumentException("Id cannot be empty");
 			}
-			else
+
+			if (existingCustomer == null)
 			{
-				throw new Exception("Customer does not exists");
+				throw new ArgumentException($"Customer with id {id} does not exist");
 			}
+
+			_dbContext.Customers.Remove(existingCustomer);
+			_dbContext.SaveChanges();
 		}
 
 		public void DeleteMultipleCustomerByIds(IEnumerable<Guid> ids)
@@ -154,7 +184,7 @@ namespace CustomerApplication.Services
 			}
 			else
 			{
-				throw new Exception("Customer does not exists");
+				throw new ArgumentException("Customers does not exist");
 			}
 		}
 	}

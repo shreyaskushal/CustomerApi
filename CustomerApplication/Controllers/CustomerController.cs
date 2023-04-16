@@ -25,25 +25,18 @@ namespace CustomerApplication.Controllers
 		[HttpPost]
 		public async Task<IActionResult> AddCustomer(CustomerRequest customerRequest)
 		{
-			try
+			var customer = new Customer()
 			{
-				var customer = new Customer()
-				{
-					Id = Guid.NewGuid(),
-					FirstName = customerRequest.FirstName,
-					LastName = customerRequest.LastName,
-					Age = customerRequest.Age,
-					Address = customerRequest.Address
-				};
+				Id = Guid.NewGuid(),
+				FirstName = customerRequest.FirstName,
+				LastName = customerRequest.LastName,
+				Age = customerRequest.Age,
+				Address = customerRequest.Address
+			};
 
-				await _customerService.AddCustomer(customer);
+			await _customerService.AddCustomer(customer);
 
-				return Ok(customer);
-			}
-			catch (Exception ex)
-			{
-				return BadRequest(ex.Message);
-			}
+			return Ok(customer);
 		}
 
 		[HttpGet]
@@ -62,7 +55,7 @@ namespace CustomerApplication.Controllers
 				var result = _customerService.GetCustomerById(id);
 				return Ok(result);
 			}
-			catch(Exception ex)
+			catch (Exception ex)
 			{
 				return NotFound(ex.Message);
 			}
@@ -76,7 +69,7 @@ namespace CustomerApplication.Controllers
 			{
 				return Ok(customer);
 			}
-			return NotFound();
+			return NoContent();
 		}
 
 		[HttpGet]
@@ -87,7 +80,7 @@ namespace CustomerApplication.Controllers
 			{
 				return Ok(customer);
 			}
-			return NotFound();
+			return NoContent();
 		}
 
 		[HttpGet]
@@ -98,7 +91,8 @@ namespace CustomerApplication.Controllers
 			{
 				return Ok(customers);
 			}
-			return NotFound();
+			
+			return NoContent();
 		}
 
 		[HttpGet]
@@ -109,74 +103,46 @@ namespace CustomerApplication.Controllers
 			{
 				return Ok(customers);
 			}
-			return NotFound();
+			return NoContent();
 		}
 
 		[HttpPut]
 		public async Task<IActionResult> UpdateCustomeById(Guid id, CustomerRequest customerRequest)
 		{
-			try
+			var customer = new Customer()
 			{
-				var customer = new Customer()
-				{
-					Id = id,
-					FirstName = customerRequest.FirstName,
-					LastName = customerRequest.LastName,
-					Age = customerRequest.Age,
-					Address = customerRequest.Address
-				};
+				Id = id,
+				FirstName = customerRequest.FirstName,
+				LastName = customerRequest.LastName,
+				Age = customerRequest.Age,
+				Address = customerRequest.Address
+			};
 
-				var result = await _customerService.UpdateCustomer(id, customer);
+			await _customerService.UpdateCustomer(id, customer);
 
-				return Ok(customer);
-			}
-			catch (Exception ex)
-			{
-				return NotFound(ex.Message);
-			}
+			return Ok(customer);
 		}
 
 		[HttpPut]
 		public IActionResult UpdateAllCustomersAgeByLastName(string lastName, int newAge)
 		{
-			try
-			{
-				var result = _customerService.UpdateAllCustomersAgeByLastName(lastName, newAge);
+			var result = _customerService.UpdateAllCustomersAgeByLastName(lastName, newAge);
 
-				return Ok(result);
-			}
-			catch (Exception ex)
-			{
-				return NotFound(ex.Message);
-			}
+			return Ok(result);
 		}
 
 		[HttpDelete]
 		public IActionResult DeleteCustomerById(Guid id)
 		{
-			try
-			{
-				_customerService.DeleteCustomerById(id);
-				return Ok();
-			}
-			catch (Exception ex)
-			{
-				return NotFound(ex.Message);
-			}
+			_customerService.DeleteCustomerById(id);
+			return Ok();
 		}
 
 		[HttpDelete]
 		public IActionResult DeleteMultipleCustomerByIds(IEnumerable<Guid> ids)
 		{
-			try
-			{
-				_customerService.DeleteMultipleCustomerByIds(ids);
-				return Ok();
-			}
-			catch (Exception ex)
-			{
-				return NotFound(ex.Message);
-			}
+			_customerService.DeleteMultipleCustomerByIds(ids);
+			return Ok();
 		}
 	}
 }

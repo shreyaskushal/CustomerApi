@@ -27,6 +27,21 @@ namespace CustomerApplication.Middleware
 			{
 				await _next(context);
 			}
+			catch (ArgumentException ex)
+			{
+				_logger.LogError(ex, ex.Message);
+				context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+				context.Response.ContentType = "application/json";
+
+				ErrorDetails errorDetails = new()
+				{
+					StatusCode = (int)HttpStatusCode.BadRequest,
+					Message = ex.Message
+				};
+
+				string error = JsonSerializer.Serialize(errorDetails);
+				await context.Response.WriteAsync(error);
+			}
 			catch(Exception ex)
 			{
 				_logger.LogError(ex, ex.Message);

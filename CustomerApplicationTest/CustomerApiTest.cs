@@ -76,18 +76,20 @@ namespace CustomerApplicationTest
 				.UseInMemoryDatabase(databaseName: "CustomerDb")
 				.Options;
 
+			var customerId = Guid.NewGuid();
+
 			var dbContext = new CustomerApiDbContext(options);
 
 			var customerService = new CustomerService(dbContext);
 			var customerController = new CustomerController(customerService);
 
 			// Act
-			var result = customerController.GetCustomerById(Guid.NewGuid());
+			var result = customerController.GetCustomerById(customerId);
 
 			// Assert
 			var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
 			Assert.Equal(404, notFoundResult.StatusCode);
-			Assert.Equal("Customer does not exists", notFoundResult.Value);
+			Assert.Equal($"Customer with id {customerId} does not exist", notFoundResult.Value);
 		}
 
 		[Fact]
